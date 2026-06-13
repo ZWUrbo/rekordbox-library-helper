@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import Base
+from app.db.models import Base, Genres, Harmony, Rhythm, Score, TrackAnalysis
 
 
 load_dotenv()
@@ -65,6 +65,40 @@ def _ensure_sqlite_columns(engine: Engine) -> None:
                     "ADD COLUMN spotify_search_query_string TEXT"
                 )
             )
+
+        _ensure_sqlite_table_columns(
+            connection,
+            [TrackAnalysis, Rhythm, Harmony, Score, Genres],
+        )
+
+
+def _ensure_sqlite_table_columns(connection, models: list[type[Base]]) -> None:
+    inspector = inspect(connection)
+    table_names = set(inspector.get_table_names())
+
+    for model in models:
+        table = model.__table__
+        if table.name not in table_names:
+            continue
+
+        existing_columns = {
+            column["name"]
+            for column in inspector.get_columns(table.name)
+        }
+        for column in table.columns:
+            if column.name in existing_columns or column.primary_key:
+                continue
+            column_type = column.type.compile(dialect=connection.dialect)
+            connection.execute(
+                text(
+                    f"ALTER TABLE {_quote_sqlite_identifier(table.name)} "
+                    f"ADD COLUMN {_quote_sqlite_identifier(column.name)} {column_type}"
+                )
+            )
+
+
+def _quote_sqlite_identifier(identifier: str) -> str:
+    return '"' + identifier.replace('"', '""') + '"'
 
 
 def get_session_factory(engine: Engine) -> sessionmaker[Session]:

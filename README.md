@@ -113,3 +113,37 @@ album similarity, then writes the highest-scoring accepted result to:
   search query string per `rekordbox_track_id`
 - `rekordbox_tracks.spotify_search_query_string`: the same Spotify search query
   string retained on the source track row
+
+## DJ Track Audio Analysis Enrichment
+
+After Spotify matching, set RapidAPI credentials in `.env`:
+
+```text
+RAPIDAPI_DJ_AUDIO_ANALYSIS_KEY=your-rapidapi-key
+RAPIDAPI_DJ_AUDIO_ANALYSIS_HOST=dj-track-audio-analysis-api.p.rapidapi.com
+RAPIDAPI_DJ_AUDIO_ANALYSIS_PATH=/v2/audio-analysis
+RAPIDAPI_DJ_AUDIO_ANALYSIS_IDS_PARAM=ids
+```
+
+Then enrich matched tracks that do not already have stored DJ analysis results:
+
+```bash
+.venv/bin/python scripts/enrich_dj_audio_analysis.py
+```
+
+Useful options:
+
+```bash
+.venv/bin/python scripts/enrich_dj_audio_analysis.py --limit 25
+.venv/bin/python scripts/enrich_dj_audio_analysis.py --rapidapi-rps 1.0 --force
+```
+
+The stage reads accepted matches from `rekordbox_spotify_matches`, batches up to
+five Spotify track IDs per RapidAPI request, skips rows already present in
+`track_analysis`, and stores the five response categories in:
+
+- `track_analysis`
+- `rhythm`
+- `harmony`
+- `score`
+- `genres`

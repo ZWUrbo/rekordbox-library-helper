@@ -1,0 +1,158 @@
+{
+  "audio_analysis": [
+    {
+      "track": {
+        "ids": {
+          "spotify": "spotify-1",
+          "isrc": "GBDUW0000053"
+        },
+        "href": "https://api.spotify.com/v1/tracks/spotify-1",
+        "name": "One More Time",
+        "popularity": 80,
+        "duration": "05:20",
+        "duration_s": 320.4,
+        "duration_ms": 320357,
+        "loudness": "-8.6 dB",
+        "loudness_db": -8.618,
+        "is_vocal_heavy": false,
+        "is_acoustic": false,
+        "is_instrumental": false,
+        "is_live_recording": false,
+        "is_club_loud": false
+      },
+      "rhythm": {
+        "tempo": "123.00 BPM",
+        "bpm": 122.746,
+        "bucket": "allegro",
+        "beats": 655,
+        "beats_per_bar": 4,
+        "beat_duration_ms": 489,
+        "bars": 164,
+        "time_signature": "4/4",
+        "half_time_bpm": 61.373,
+        "double_time_bpm": 245.492,
+        "phrases_s": {
+          "bar_1": 2,
+          "bar_2": 3.9,
+          "bar_4": 7.8,
+          "bar_8": 15.6,
+          "bar_16": 31.3,
+          "bar_32": 62.6,
+          "bar_64": 125.1
+        },
+        "phrases_count": {
+          "bar_16": 10,
+          "bar_32": 5
+        }
+      },
+      "harmony": {
+        "key": 2,
+        "mode": "major",
+        "camelot": "10B",
+        "camelot_number": 10,
+        "camelot_letter": "B",
+        "note": "D"
+      },
+      "score": {
+        "danceability": 0.613,
+        "energy": 0.697,
+        "speechiness": 0.133,
+        "acousticness": 0.019,
+        "instrumentalness": 0,
+        "liveness": 0.332,
+        "valence": 0.476,
+        "dance_floor": 0.651,
+        "chill": 0.006,
+        "aggressive": 0.683,
+        "hype": 0.813,
+        "groove": 0.689,
+        "warmup": 0.314,
+        "peak_time": 0.672,
+        "blendability": 0.426,
+        "vocal_risk": 0.48
+      },
+      "genres": [
+        "french house",
+        "electronic",
+        "electro"
+      ]
+    },
+    {
+      "track": {
+        "ids": {
+          "spotify": "spotify-2",
+          "isrc": "GBDUW0000064"
+        },
+        "href": "https://api.spotify.com/v1/tracks/spotify-2",
+        "name": "Something About Us",
+        "popularity": 72,
+        "duration": "03:52",
+        "duration_s": 232.7,
+        "duration_ms": 232667,
+        "loudness": "-12.7 dB",
+        "loudness_db": -12.673,
+        "is_vocal_heavy": false,
+        "is_acoustic": false,
+        "is_instrumental": true,
+        "is_live_recording": false,
+        "is_club_loud": false
+      },
+      "rhythm": {
+        "tempo": "100.00 BPM",
+        "bpm": 99.958,
+        "bucket": "andante",
+        "beats": 388,
+        "beats_per_bar": 4,
+        "beat_duration_ms": 600,
+        "bars": 97,
+        "time_signature": "4/4",
+        "half_time_bpm": 49.979,
+        "double_time_bpm": 199.916,
+        "phrases_s": {
+          "bar_1": 2.4,
+          "bar_2": 4.8,
+          "bar_4": 9.6,
+          "bar_8": 19.2,
+          "bar_16": 38.4,
+          "bar_32": 76.8,
+          "bar_64": 153.7
+        },
+        "phrases_count": {
+          "bar_16": 6,
+          "bar_32": 3
+        }
+      },
+      "harmony": {
+        "key": 9,
+        "mode": "minor",
+        "camelot": "8A",
+        "camelot_number": 8,
+        "camelot_letter": "A",
+        "note": "Am"
+      },
+      "score": {
+        "danceability": 0.875,
+        "energy": 0.475,
+        "speechiness": 0.099,
+        "acousticness": 0.44,
+        "instrumentalness": 0.72,
+        "liveness": 0.046,
+        "valence": 0.384,
+        "dance_floor": 0.695,
+        "chill": 0.231,
+        "aggressive": 0.266,
+        "hype": 0.467,
+        "groove": 0.883,
+        "warmup": 0.548,
+        "peak_time": 0.595,
+        "blendability": 0.814,
+        "vocal_risk": 0.171
+      },
+      "genres": [
+        "french house",
+        "electronic",
+        "electro"
+      ]
+    }
+  ]
+}
