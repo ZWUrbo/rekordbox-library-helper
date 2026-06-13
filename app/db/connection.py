@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterator
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -30,6 +30,41 @@ def get_engine() -> Engine:
 
 def create_tables(engine: Engine) -> None:
     Base.metadata.create_all(engine)
+    _ensure_sqlite_columns(engine)
+
+
+def _ensure_sqlite_columns(engine: Engine) -> None:
+    if engine.dialect.name != "sqlite":
+        return
+
+    inspector = inspect(engine)
+    if "rekordbox_tracks" not in inspector.get_table_names():
+        return
+
+    rekordbox_track_columns = {
+        column["name"]
+        for column in inspector.get_columns("rekordbox_tracks")
+    }
+    with engine.begin() as connection:
+        if "spotify_search_query_string" not in rekordbox_track_columns:
+            connection.execute(
+                text("ALTER TABLE rekordbox_tracks ADD COLUMN spotify_search_query_string TEXT")
+            )
+
+        if "rekordbox_spotify_matches" not in inspector.get_table_names():
+            return
+
+        match_columns = {
+            column["name"]
+            for column in inspect(connection).get_columns("rekordbox_spotify_matches")
+        }
+        if "spotify_search_query_string" not in match_columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE rekordbox_spotify_matches "
+                    "ADD COLUMN spotify_search_query_string TEXT"
+                )
+            )
 
 
 def get_session_factory(engine: Engine) -> sessionmaker[Session]:

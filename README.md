@@ -76,6 +76,40 @@ This project is in the planning and early development phase.
 Current focus areas:
 
 - Importing and storing DJ library metadata
+- Matching Rekordbox tracks to Spotify catalog metadata
 - Defining the recommendation model
 - Exploring audio, lyric, and release-data sources
 - Designing the first practical discovery workflow
+
+## Spotify Enrichment
+
+Create a Spotify developer app and set its client credentials in `.env`:
+
+```text
+SPOTIFY_CLIENT_ID=your-client-id
+SPOTIFY_CLIENT_SECRET=your-client-secret
+SPOTIFY_MARKET=US
+```
+
+Then enrich all Rekordbox tracks that do not already have an accepted match:
+
+```bash
+.venv/bin/python scripts/enrich_spotify.py
+```
+
+Useful options:
+
+```bash
+.venv/bin/python scripts/enrich_spotify.py --limit 25
+.venv/bin/python scripts/enrich_spotify.py --spotify-search-limit 5 --spotify-rps 2.0 --minimum-match-score 0.85 --force
+```
+
+The stage searches Spotify using a cleaned track title, the first listed artist,
+and album when available. It scores each returned result using title, artist, and
+album similarity, then writes the highest-scoring accepted result to:
+
+- `spotify_tracks`: Spotify metadata keyed by `spotify_track_id`
+- `rekordbox_spotify_matches`: one accepted Spotify match, derived score, and
+  search query string per `rekordbox_track_id`
+- `rekordbox_tracks.spotify_search_query_string`: the same Spotify search query
+  string retained on the source track row
