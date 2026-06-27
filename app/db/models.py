@@ -64,6 +64,20 @@ class RekordboxSpotifyMatch(Base):
     )
 
 
+class GeminiRawLyrics(Base):
+    __tablename__ = "gemini_raw_lyrics"
+
+    rekordbox_track_id: Mapped[int] = mapped_column(
+        ForeignKey("rekordbox_tracks.rekordbox_track_id"),
+        primary_key=True,
+    )
+    raw_json: Mapped[str] = mapped_column(Text, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False),
+        server_default=func.current_timestamp(),
+    )
+
+
 class TrackAnalysis(Base):
     __tablename__ = "track_analysis"
 

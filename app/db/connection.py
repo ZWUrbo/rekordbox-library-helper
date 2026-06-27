@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.db.models import Base, Genres, Harmony, Rhythm, Score, TrackAnalysis
+from app.db.models import Base, GeminiRawLyrics, Genres, Harmony, Rhythm, Score, TrackAnalysis
 
 
 load_dotenv()
@@ -68,8 +68,9 @@ def _ensure_sqlite_columns(engine: Engine) -> None:
 
         _ensure_sqlite_table_columns(
             connection,
-            [TrackAnalysis, Rhythm, Harmony, Score, Genres],
+            [TrackAnalysis, Rhythm, Harmony, Score, Genres, GeminiRawLyrics],
         )
+        _remove_legacy_gemini_spotify_column(connection)
 
 
 def _ensure_sqlite_table_columns(connection, models: list[type[Base]]) -> None:
@@ -99,6 +100,26 @@ def _ensure_sqlite_table_columns(connection, models: list[type[Base]]) -> None:
 
 def _quote_sqlite_identifier(identifier: str) -> str:
     return '"' + identifier.replace('"', '""') + '"'
+
+
+def _remove_legacy_gemini_spotify_column(connection) -> None:
+    inspector = inspect(connection)
+    if "gemini_raw_lyrics" not in inspector.get_table_names():
+        return
+    columns = {
+        column["name"] for column in inspector.get_columns("gemini_raw_lyrics")
+    }
+    if "spotify_track_id" not in columns:
+        return
+
+    for index in inspector.get_indexes("gemini_raw_lyrics"):
+        if "spotify_track_id" in index.get("column_names", []):
+            connection.execute(
+                text(f"DROP INDEX {_quote_sqlite_identifier(index['name'])}")
+            )
+    connection.execute(
+        text("ALTER TABLE gemini_raw_lyrics DROP COLUMN spotify_track_id")
+    )
 
 
 def get_session_factory(engine: Engine) -> sessionmaker[Session]:

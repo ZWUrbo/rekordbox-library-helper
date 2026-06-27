@@ -34,6 +34,7 @@ dist/
 # Generated ingestion outputs
 data/exports/*.csv
 !data/exports/.gitkeep
+data/interim/gemini/
 
 # Jupyter
 .ipynb_checkpoints/

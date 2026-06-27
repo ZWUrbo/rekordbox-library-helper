@@ -147,3 +147,33 @@ five Spotify track IDs per RapidAPI request, skips rows already present in
 - `harmony`
 - `score`
 - `genres`
+
+## Gemini Lyrics Batch Enrichment
+
+Set a Gemini API key in `.env`:
+
+```text
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Create a Gemini JSONL batch for all playlist tracks whose Rekordbox genre is in
+the configured lyric genres. Each request enables Grounding with Google Search.
+Gemini does not support Search tool use together with JSON response MIME mode,
+so JSON-only output is enforced by the prompt and validated during import:
+
+```bash
+.venv/bin/python scripts/enrich_gemini_lyrics.py --limit 1000
+```
+
+The command writes its request JSONL and manifest under `data/interim/gemini/`.
+If the job is still running, poll and import it later using the batch name logged
+by the first command:
+
+```bash
+.venv/bin/python scripts/enrich_gemini_lyrics.py --batch-name <batch-name> --wait
+```
+
+Completed responses are validated as JSON objects and stored without reshaping
+in `gemini_raw_lyrics.raw_json`, alongside `rekordbox_track_id`. Existing rows
+are skipped unless `--force` is supplied.
