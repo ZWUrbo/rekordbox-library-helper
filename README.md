@@ -154,6 +154,15 @@ Each analysis DataFrame uses `spotify_track_id` as the join key, so the files
 can be merged into a holistic Beatport Top 100 analysis without relying on
 Rekordbox table IDs.
 
+The `notebooks/hdbscan_track_clustering.ipynb` notebook can then project the
+analyzed Beatport tracks into the existing full-feature HDBSCAN EOM cluster
+profiles learned from the Rekordbox library. For now, Beatport tracks that are
+successfully assigned to one of these existing clusters act as the current
+recommended songs: they are new/discovery candidates whose audio-analysis
+profile falls inside a learned neighborhood of the DJ's library. Tracks assigned
+to `noise` or missing required features remain useful review candidates, but
+they are not treated as current recommendations.
+
 ## DJ Track Audio Analysis Enrichment
 
 After Spotify matching, set RapidAPI credentials in `.env`:
