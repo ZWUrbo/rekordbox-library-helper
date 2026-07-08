@@ -10,6 +10,7 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 
 import certifi
+import pandas as pd
 from sqlalchemy import func, select
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
@@ -138,6 +139,15 @@ class DJAudioAnalysisEnrichmentResult:
     processed: int = 0
     enriched: int = 0
     failed: int = 0
+
+
+@dataclass(frozen=True)
+class DJAudioAnalysisDataFrames:
+    track_analysis: pd.DataFrame
+    rhythm: pd.DataFrame
+    harmony: pd.DataFrame
+    score: pd.DataFrame
+    genres: pd.DataFrame
 
 
 class DJAudioAnalysisClient:
@@ -456,6 +466,115 @@ class DJAudioAnalysisEnrichmentService:
             Genres,
             _genres_row(rekordbox_track_id, spotify_track_id, record.genres),
         )
+
+
+def enrich_spotify_dataframe_with_dj_audio_analysis(
+    dataframe: pd.DataFrame,
+    client: DJAudioAnalysisClient,
+    spotify_id_column: str = "spotify_track_id",
+) -> DJAudioAnalysisDataFrames:
+    if spotify_id_column not in dataframe.columns:
+        raise ValueError(
+            f"DataFrame is missing required Spotify ID column: {spotify_id_column}"
+        )
+
+    spotify_track_ids = _unique_dataframe_spotify_track_ids(
+        dataframe[spotify_id_column]
+    )
+    total_tracks = len(spotify_track_ids)
+    logger.info(
+        "Selected %s Spotify tracks for dataframe DJ audio analysis",
+        total_tracks,
+    )
+
+    records: list[DJAudioAnalysisRecord] = []
+    for position in range(0, total_tracks, MAX_AUDIO_ANALYSIS_BATCH_SIZE):
+        batch = spotify_track_ids[position:position + MAX_AUDIO_ANALYSIS_BATCH_SIZE]
+        try:
+            logger.info(
+                "DJ audio analysis dataframe search %s-%s/%s",
+                position + 1,
+                min(position + len(batch), total_tracks),
+                total_tracks,
+            )
+            records.extend(client.get_several_track_audio_analysis(batch))
+        except Exception:
+            logger.exception(
+                "DJ audio analysis dataframe enrichment failed for batch starting "
+                "with Spotify track %s",
+                batch[0] if batch else None,
+            )
+
+    return build_dj_audio_analysis_dataframes(records)
+
+
+def build_dj_audio_analysis_dataframes(
+    records: Sequence[DJAudioAnalysisRecord],
+) -> DJAudioAnalysisDataFrames:
+    return DJAudioAnalysisDataFrames(
+        track_analysis=_records_to_dataframe(
+            records,
+            TrackAnalysis,
+            lambda record: _track_analysis_row(
+                0,
+                record.spotify_track_id,
+                record.track_analysis,
+            ),
+        ),
+        rhythm=_records_to_dataframe(
+            records,
+            Rhythm,
+            lambda record: _rhythm_row(0, record.spotify_track_id, record.rhythm),
+        ),
+        harmony=_records_to_dataframe(
+            records,
+            Harmony,
+            lambda record: _harmony_row(0, record.spotify_track_id, record.harmony),
+        ),
+        score=_records_to_dataframe(
+            records,
+            Score,
+            lambda record: _score_row(0, record.spotify_track_id, record.score),
+        ),
+        genres=_records_to_dataframe(
+            records,
+            Genres,
+            lambda record: _genres_row(0, record.spotify_track_id, record.genres),
+        ),
+    )
+
+
+def _records_to_dataframe(
+    records: Sequence[DJAudioAnalysisRecord],
+    model: type[Any],
+    row_builder,
+) -> pd.DataFrame:
+    columns = _dataframe_columns_for_model(model)
+    rows = []
+    for record in records:
+        row = row_builder(record)
+        row.pop("rekordbox_track_id", None)
+        rows.append({column: row.get(column) for column in columns})
+    return pd.DataFrame(rows, columns=columns)
+
+
+def _dataframe_columns_for_model(model: type[Any]) -> list[str]:
+    return [
+        column.name
+        for column in model.__table__.columns
+        if column.name not in {"rekordbox_track_id", "fetched_at"}
+    ]
+
+
+def _unique_dataframe_spotify_track_ids(values: pd.Series) -> list[str]:
+    track_ids = []
+    for value in values:
+        if value is None or pd.isna(value):
+            continue
+        track_id = str(value).strip()
+        if track_id:
+            track_ids.append(track_id)
+    return list(dict.fromkeys(track_ids))
 
 
 def _chunk_match_rows(rows: Sequence[Any], size: int) -> Iterable[list[tuple[int, str]]]:

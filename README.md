@@ -114,6 +114,46 @@ album similarity, then writes the highest-scoring accepted result to:
 - `rekordbox_tracks.spotify_search_query_string`: the same Spotify search query
   string retained on the source track row
 
+### Beatport Top 100 Spotify Lookup
+
+The Beatport Top 100 list is treated as transient discovery input, so it is
+extracted into a pandas DataFrame rather than stored in SQLite. The extraction
+uses Beautiful Soup selectors from the Beatport track table, then reuses the
+Spotify title/artist search and scoring logic above to append Spotify IDs:
+
+```bash
+.venv/bin/python scripts/enrich_beatport_top100_spotify.py
+```
+
+By default, the enriched DataFrame is also written to
+`data/exports/beatport_top100_spotify.csv` for inspection. Useful options:
+
+```bash
+.venv/bin/python scripts/enrich_beatport_top100_spotify.py --spotify-search-limit 5 --minimum-match-score 0.85
+.venv/bin/python scripts/enrich_beatport_top100_spotify.py --output-csv /tmp/beatport_top100_spotify.csv
+```
+
+To continue from the matched Beatport Top 100 Spotify IDs into DJ Track Audio
+Analysis, set the RapidAPI credentials described below and run:
+
+```bash
+.venv/bin/python scripts/enrich_beatport_top100_analysis.py
+```
+
+This keeps the Beatport workflow out of SQLite. It writes separate pandas
+DataFrame CSV exports under `data/exports/beatport_top100_analysis/`:
+
+- `spotify_matches.csv`
+- `track_analysis.csv`
+- `rhythm.csv`
+- `harmony.csv`
+- `score.csv`
+- `genres.csv`
+
+Each analysis DataFrame uses `spotify_track_id` as the join key, so the files
+can be merged into a holistic Beatport Top 100 analysis without relying on
+Rekordbox table IDs.
+
 ## DJ Track Audio Analysis Enrichment
 
 After Spotify matching, set RapidAPI credentials in `.env`:

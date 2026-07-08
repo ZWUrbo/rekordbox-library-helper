@@ -33,6 +33,7 @@ dist/
 
 # Generated ingestion outputs
 data/exports/*.csv
+data/exports/beatport_top100_analysis/
 !data/exports/.gitkeep
 data/interim/gemini/
 

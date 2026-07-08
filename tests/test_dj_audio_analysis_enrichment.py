@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+import pandas as pd
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session
 
@@ -23,6 +24,7 @@ from app.enrichment.dj_audio_analysis import (
     DJAudioAnalysisEnrichmentService,
     DJAudioAnalysisRecord,
     MAX_AUDIO_ANALYSIS_BATCH_SIZE,
+    enrich_spotify_dataframe_with_dj_audio_analysis,
     parse_analysis_response,
 )
 
@@ -299,6 +301,119 @@ class DJAudioAnalysisEnrichmentTests(unittest.TestCase):
         self.assertIn("camelot_number", columns_by_table["harmony"])
         self.assertIn("blendability", columns_by_table["score"])
         self.assertIn("values", columns_by_table["genres"])
+
+    def test_dataframe_enrichment_returns_joinable_table_shaped_frames(self) -> None:
+        fake_client = FakeDJAudioAnalysisClient(self.records)
+        spotify_df = pd.DataFrame(
+            {
+                "spotify_track_id": [
+                    "spotify-1",
+                    "spotify-2",
+                    None,
+                    "spotify-1",
+                ]
+            }
+        )
+
+        frames = enrich_spotify_dataframe_with_dj_audio_analysis(
+            spotify_df,
+            fake_client,
+        )
+
+        self.assertEqual(fake_client.calls, [["spotify-1", "spotify-2"]])
+        self.assertEqual(frames.track_analysis.columns.tolist(), [
+            "spotify_track_id",
+            "ids_spotify",
+            "ids_isrc",
+            "href",
+            "name",
+            "popularity",
+            "duration",
+            "duration_s",
+            "duration_ms",
+            "loudness",
+            "loudness_db",
+            "is_vocal_heavy",
+            "is_acoustic",
+            "is_instrumental",
+            "is_live_recording",
+            "is_club_loud",
+            "raw_payload",
+        ])
+        self.assertEqual(frames.rhythm.columns.tolist(), [
+            "spotify_track_id",
+            "bpm",
+            "tempo",
+            "bucket",
+            "beats",
+            "beats_per_bar",
+            "beat_duration_ms",
+            "bars",
+            "time_signature",
+            "half_time_bpm",
+            "double_time_bpm",
+            "phrases_s_bar_1",
+            "phrases_s_bar_2",
+            "phrases_s_bar_4",
+            "phrases_s_bar_8",
+            "phrases_s_bar_16",
+            "phrases_s_bar_32",
+            "phrases_s_bar_64",
+            "phrases_count_bar_16",
+            "phrases_count_bar_32",
+            "raw_payload",
+        ])
+        self.assertEqual(frames.harmony.columns.tolist(), [
+            "spotify_track_id",
+            "key",
+            "mode",
+            "camelot",
+            "camelot_number",
+            "camelot_letter",
+            "note",
+            "raw_payload",
+        ])
+        self.assertEqual(frames.score.columns.tolist(), [
+            "spotify_track_id",
+            "danceability",
+            "energy",
+            "speechiness",
+            "acousticness",
+            "instrumentalness",
+            "liveness",
+            "valence",
+            "dance_floor",
+            "chill",
+            "aggressive",
+            "hype",
+            "groove",
+            "warmup",
+            "peak_time",
+            "blendability",
+            "vocal_risk",
+            "raw_payload",
+        ])
+        self.assertEqual(frames.genres.columns.tolist(), [
+            "spotify_track_id",
+            "values",
+            "raw_payload",
+        ])
+        self.assertNotIn("rekordbox_track_id", frames.track_analysis.columns)
+        self.assertNotIn("fetched_at", frames.track_analysis.columns)
+
+        joined = (
+            frames.track_analysis
+            .merge(frames.rhythm, on="spotify_track_id", suffixes=("", "_rhythm"))
+            .merge(frames.harmony, on="spotify_track_id", suffixes=("", "_harmony"))
+            .merge(frames.score, on="spotify_track_id", suffixes=("", "_score"))
+            .merge(frames.genres, on="spotify_track_id", suffixes=("", "_genres"))
+        )
+
+        self.assertEqual(set(joined["spotify_track_id"]), {"spotify-1", "spotify-2"})
+        self.assertIn("bpm", joined.columns)
+        self.assertIn("camelot", joined.columns)
+        self.assertIn("danceability", joined.columns)
+        self.assertIn("values", joined.columns)
 
 
 if __name__ == "__main__":

@@ -110,6 +110,13 @@ class SpotifyTrackCandidate:
 
 
 @dataclass(frozen=True)
+class SpotifyTrackSearchInput:
+    title: str | None
+    artist: str | None = None
+    album: str | None = ""
+
+
+@dataclass(frozen=True)
 class EnrichmentResult:
     processed: int = 0
     matched: int = 0
@@ -179,28 +186,39 @@ def build_spotify_search_query(
 
 
 def calculate_match_score(
-    rekordbox_track: RekordboxTrack,
+    source_track: RekordboxTrack | SpotifyTrackSearchInput,
     spotify_track: SpotifyTrackCandidate,
 ) -> float:
     components = [
         (
             0.6,
-            _similarity(prepare_track_search_title(rekordbox_track.title), spotify_track.title),
+            _similarity(prepare_track_search_title(source_track.title), spotify_track.title),
         ),
         (
             0.3,
             _similarity(
-                prepare_artist_search_name(rekordbox_track.artist),
+                prepare_artist_search_name(source_track.artist),
                 ", ".join(spotify_track.artist_names),
             ),
         ),
     ]
-    album_search_name = prepare_album_search_name(rekordbox_track.album)
+    album_search_name = prepare_album_search_name(source_track.album)
     if album_search_name:
         components.append((0.1, _similarity(album_search_name, spotify_track.album_name)))
 
     total_weight = sum(weight for weight, _ in components)
     return round(sum(weight * score for weight, score in components) / total_weight, 4)
+
+
+def select_best_spotify_match(
+    source_track: RekordboxTrack | SpotifyTrackSearchInput,
+    candidates: list[SpotifyTrackCandidate],
+) -> tuple[float, SpotifyTrackCandidate | None]:
+    scored_candidates = [
+        (calculate_match_score(source_track, candidate), candidate)
+        for candidate in candidates
+    ]
+    return max(scored_candidates, key=lambda candidate: candidate[0], default=(0.0, None))
 
 
 class SpotifyClient:
@@ -378,15 +396,7 @@ class SpotifyEnrichmentService:
                     track.album,
                     limit=self.search_limit,
                 )
-                scored_candidates = [
-                    (calculate_match_score(track, candidate), candidate)
-                    for candidate in candidates
-                ]
-                best_score, best_candidate = max(
-                    scored_candidates,
-                    key=lambda candidate: candidate[0],
-                    default=(0.0, None),
-                )
+                best_score, best_candidate = select_best_spotify_match(track, candidates)
                 if best_candidate is None or best_score < self.minimum_match_score:
                     unmatched += 1
                     continue
