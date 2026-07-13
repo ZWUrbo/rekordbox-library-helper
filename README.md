@@ -157,11 +157,13 @@ Rekordbox table IDs.
 The `notebooks/hdbscan_track_clustering.ipynb` notebook can then project the
 analyzed Beatport tracks into the existing full-feature HDBSCAN EOM cluster
 profiles learned from the Rekordbox library. For now, Beatport tracks that are
-successfully assigned to one of these existing clusters act as the current
-recommended songs: they are new/discovery candidates whose audio-analysis
-profile falls inside a learned neighborhood of the DJ's library. Tracks assigned
-to `noise` or missing required features remain useful review candidates, but
-they are not treated as current recommendations.
+successfully assigned to one of these existing `full_eom_cluster` values are the
+current recommended songs: they are new/discovery candidates whose
+audio-analysis profile falls inside a learned neighborhood of the DJ's library.
+Tracks assigned to `noise` or missing required features remain useful review
+candidates, but they are not treated as current recommendations. The notebook
+exports those assigned Beatport tracks separately as
+`data/exports/beatport_top100_current_recommended_songs.csv`.
 
 ## DJ Track Audio Analysis Enrichment
 
