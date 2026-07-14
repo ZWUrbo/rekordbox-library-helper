@@ -2,13 +2,21 @@
 
 ## Overview
 
-DJ Library Helper is an early-stage tool for helping DJs discover relevant new music based on the tracks already in their library. The project is intended to analyze a DJ's existing collection, understand musical context, and recommend songs that are likely to fit their sound, sets, and creative mixing style.
+DJ Library Helper is a working V1 recommendation pipeline for DJ library-aware
+music discovery. It analyzes a DJ's existing Rekordbox library, enriches matched
+tracks with catalog and audio-analysis metadata, learns style neighborhoods from
+the library, and projects new Beatport Top 100 tracks into those neighborhoods.
 
-The project currently includes initial groundwork for importing Rekordbox playlist data into local CSV and SQLite-backed storage. Recommendation, audio analysis, lyric analysis, and user-facing workflows are still being defined.
+The current MVP output is a CSV of recommended Beatport songs. A Beatport track
+is treated as a current recommendation when it is successfully assigned to an
+existing full-feature HDBSCAN EOM cluster learned from the Rekordbox library.
+Tracks assigned to `noise` or missing required features are kept as review
+candidates, but are not counted as current recommendations.
 
 ## Core Purpose
 
-The application recommends songs for DJs, with a focus on newly released music.
+The application recommends songs for DJs, with a focus on new and high-signal
+discovery sources.
 
 Recommendations should be based on musical similarity to tracks already present in the DJ's library, including factors such as:
 
@@ -24,6 +32,10 @@ Recommendations should be based on musical similarity to tracks already present 
 
 The system should also identify opportunities for creative transitions and wordplay by recommending tracks that share lyrics, phrases, themes, hooks, or vocal references with songs in the DJ's collection. This can help DJs find clever blends, thematic moments, call-and-response transitions, and set-building ideas that go beyond simple audio similarity.
 
+In V1, the shipped recommendation logic is audio-feature and cluster based.
+Lyrics, genre semantics, release recency, key/harmony-aware ranking, and
+explainable scoring are active refinement areas.
+
 ## Target Audience
 
 - Professional DJs
@@ -35,33 +47,40 @@ The system should also identify opportunities for creative transitions and wordp
 
 ## Key Features
 
-Planned and emerging capabilities include:
+V1 capabilities include:
 
-- New music discovery
-- Library-aware recommendations
-- Audio-feature matching
-- Lyric and phrase overlap detection
+- Rekordbox library ingestion into local SQLite-backed storage
+- Spotify matching for Rekordbox tracks and Beatport Top 100 discovery tracks
+- DJ Track Audio Analysis enrichment for matched Spotify tracks
+- HDBSCAN clustering over matched Rekordbox library tracks
+- Full-feature EOM cluster projection for Beatport Top 100 tracks
+- Current recommended-song export for Beatport tracks assigned to existing
+  `full_eom_cluster` neighborhoods
+- Notebook-based inspection of cluster profiles, representative tracks, boundary
+  tracks, noise tracks, and recommendation candidates
+
+Planned refinements include:
+
+- Human-readable cluster labels
+- Better recommendation ranking within assigned clusters
+- Genre, key, harmony, lyrics, phrase, and release-date features
 - Transition and mixing insights
 - Recommendation explanations
+- A more user-facing workflow beyond notebooks and CSV exports
 
 ## Intended Tech Stack
 
-Current and intended technologies include:
+Current technologies include:
 
 - **Language:** Python
 - **DJ library ingestion:** Rekordbox XML export support via `pyrekordbox`
 - **Database:** SQLite with SQLAlchemy
 - **Configuration:** Environment variables via `python-dotenv`
-- **Data exports:** CSV files for inspection and downstream analysis
-
-Implementation details still to be defined:
-
-- Audio feature extraction provider or library
-- Lyrics and phrase matching data source
-- New release data source
-- Recommendation ranking model
-- User interface or command-line workflow
-- Deployment or packaging approach
+- **Catalog matching:** Spotify API
+- **Audio analysis:** DJ Track Audio Analysis via RapidAPI
+- **Lyrics exploration:** Gemini batch enrichment
+- **Modeling and analysis:** pandas, scikit-learn, HDBSCAN, notebooks
+- **Data exports:** CSV files for inspection and downstream use
 
 ## Future Vision
 
@@ -71,15 +90,22 @@ Over time, the platform could provide set-aware recommendations, transition sugg
 
 ## Project Status
 
-This project is in the planning and early development phase.
+This project is at MVP / V1 delivery.
 
-Current focus areas:
+The pipeline is functional end to end for the current workflow:
 
-- Importing and storing DJ library metadata
-- Matching Rekordbox tracks to Spotify catalog metadata
-- Defining the recommendation model
-- Exploring audio, lyric, and release-data sources
-- Designing the first practical discovery workflow
+1. Import Rekordbox library data.
+2. Match library tracks to Spotify.
+3. Enrich matched tracks with DJ audio-analysis features.
+4. Cluster the library with HDBSCAN.
+5. Pull Beatport Top 100 discovery input.
+6. Match and enrich Beatport tracks.
+7. Project Beatport tracks into the selected full-feature EOM cluster model.
+8. Export Beatport tracks assigned to existing `full_eom_cluster` values as the
+   current recommended songs.
+
+The main refinements still underway are recommendation quality, ranking,
+feature coverage, cluster interpretation, and a smoother user-facing workflow.
 
 ## Spotify Enrichment
 
